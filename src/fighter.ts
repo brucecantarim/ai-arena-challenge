@@ -15,8 +15,11 @@ export default class Fighter {
   };
 
   private position: Vector3;
+  private direction: number;
+  private shouldFlip: boolean;
+  private shouldMove: boolean;
 
-  constructor(scene: THREE.Scene, resources: Resources) {
+  constructor(scene: THREE.Scene, resources: Resources, direction: number = 1) {
     this.scene = scene;
     this.resources = resources;
     this.keyboard = new Keyboard();
@@ -47,6 +50,8 @@ export default class Fighter {
     };
 
     this.position = new Vector3(0, 0, 0);
+    this.direction = direction;
+    this.shouldMove = false;
 
     this.addFighterToScene();
     this.attachFighterAnimations();
@@ -69,26 +74,52 @@ export default class Fighter {
     });
   }
 
-  //TODO: Create function that updates the `position` of the fighter
-  move(deltaTime: number) {}
+  //function that updates the `position` of the fighter
+  move(deltaTime: number) {
+    if (!this.shouldMove) return;
+    const moveSpeed = 0.1;
+    const movement = moveSpeed * deltaTime/10 * this.direction;
+    this.position.x += movement;
+  }
 
   //Add visual updates here
   update(deltaTime: number) {
     this.animation.update(deltaTime);
 
     this.model.position.set(this.position.x, this.position.y, 0);
+
+    this.shouldFlip && this.flip();
   }
 
-  //TODO: Create function that inverts the direction the fighter faces
-  flip() {}
+  //function that inverts the direction the fighter faces
+  flip() {
+    if (this.direction !== 0) {
+      this.model.scale.z *= -1;
+      this.shouldFlip = false;
+    }
+  }
 
   //Add physics updates here
   updateFixed(deltaTimeFixed: number) {
-    //Add input/movement here
+    //input/movement
     if (this.keyboard.isDown("KeyA")) {
+      if (this.direction !== -1) {
+        this.direction = -1; // Move left
+        this.shouldFlip = true;
+      }
+      this.shouldMove = true;
+      this.animation.play("run");
+    } else if (this.keyboard.isDown("KeyD")) {
+      if (this.direction !== 1) {
+        this.direction = 1; // Move right 
+        this.shouldFlip = true;
+      }
+      this.shouldMove = true;
+      this.animation.play("run");
+    } else {
+      this.shouldMove = false;
+      this.animation.play("idle");
     }
-
-    this.animation.play("idle");
 
     this.move(deltaTimeFixed);
   }
