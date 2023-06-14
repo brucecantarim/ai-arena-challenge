@@ -1,0 +1,36 @@
+:root {
+  --platform-fighter-aspect-ratio: calc(16 / 9);
+  --platform-fighter-play-button-width: 10;
+  --platform-fighter-play-button-height-multiple: 0.8;
+  --border-width: 2px;
+  overflow: hidden;
+}
+
+body {
+  font-family: sans-serif;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+#app {
+  position: absolute;
+  z-index: -1;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+
+  height: calc(100vh - 2 * var(--border-width));
+  width: calc(
+    100vh * var(--platform-fighter-aspect-ratio) - 2 * var(--border-width)
+  );
+}
+
+canvas {
+  height: 100%;
+  width: 100%;
+}
+
+button {
+  visibility: hidden;
+}
