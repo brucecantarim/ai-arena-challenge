@@ -1,4 +1,4 @@
-import { AnimationAction, AnimationMixer, Group, Vector3 } from "three";
+import { AnimationAction, AnimationMixer, Group, Vector3, LoopOnce } from "three";
 import Keyboard from "./helpers/keyboard";
 import Resources from "./helpers/resources";
 
@@ -18,6 +18,7 @@ export default class Fighter {
   private direction: number;
   private shouldFlip: boolean;
   private shouldMove: boolean;
+  private controlsLocked: boolean;
 
   constructor(scene: THREE.Scene, resources: Resources, direction: number = 1) {
     this.scene = scene;
@@ -52,6 +53,7 @@ export default class Fighter {
     this.position = new Vector3(0, 0, 0);
     this.direction = direction;
     this.shouldMove = false;
+    this.controlsLocked = false;
 
     this.addFighterToScene();
     this.attachFighterAnimations();
@@ -65,7 +67,7 @@ export default class Fighter {
   }
 
   attachFighterAnimations() {
-    //Available animations
+    // Available animations
     ["idle", "run", "jump", "punch"].forEach((action) => {
       const resource = this.resources.items[action] as Group;
       this.animation.actions[action] = this.animation.mixer.clipAction(
@@ -76,10 +78,11 @@ export default class Fighter {
 
   //function that updates the `position` of the fighter
   move(deltaTime: number) {
-    if (!this.shouldMove) return;
+    if (!this.shouldMove || this.controlsLocked) return;
     const moveSpeed = 0.1;
     const movement = moveSpeed * deltaTime/10 * this.direction;
     this.position.x += movement;
+    // TODO: Add jump logic
   }
 
   //Add visual updates here
@@ -102,22 +105,48 @@ export default class Fighter {
   //Add physics updates here
   updateFixed(deltaTimeFixed: number) {
     //input/movement
-    if (this.keyboard.isDown("KeyA")) {
-      if (this.direction !== -1) {
-        this.direction = -1; // Move left
-        this.shouldFlip = true;
+    if (!this.controlsLocked) {
+      if (this.keyboard.isDown("KeyA")) {
+        if (this.direction !== -1) {
+          this.direction = -1; // Move left
+          this.shouldFlip = true;
+        }
+        this.shouldMove = true;
+        this.animation.play("run");
+      } else if (this.keyboard.isDown("KeyD")) {
+        if (this.direction !== 1) {
+          this.direction = 1; // Move right 
+          this.shouldFlip = true;
+        }
+        this.shouldMove = true;
+        this.animation.play("run");
+      } else {
+        this.shouldMove = false;
+        this.animation.play("idle");
       }
-      this.shouldMove = true;
-      this.animation.play("run");
-    } else if (this.keyboard.isDown("KeyD")) {
-      if (this.direction !== 1) {
-        this.direction = 1; // Move right 
-        this.shouldFlip = true;
+      
+    // Jump input
+      if (this.keyboard.isDown("Space")) {
+        this.animation.play("jump");
       }
-      this.shouldMove = true;
-      this.animation.play("run");
-    } else {
-      this.shouldMove = false;
+    }
+   
+    // Punch input
+    if (this.keyboard.isDown("KeyJ")) {
+      if ( 
+        this.animation.actions.current.getClip().name !== "punch"
+      ) {
+        this.animation.play("punch"); 
+        this.animation.actions.current.setLoop(LoopOnce, 0);
+        this.shouldMove = false;
+        this.controlsLocked = true;
+      }
+    }
+
+
+  // Check if punch animation has finished
+    if (!this.animation.actions.current.enabled) {
+      this.controlsLocked = false; // Unlock the controls after the punch animation finishes
       this.animation.play("idle");
     }
 
